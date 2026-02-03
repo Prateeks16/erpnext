@@ -225,25 +225,33 @@ def get_statement_dict(doc, get_statement_dict=False):
 
 
 def set_ageing(doc, entry):
-	ageing_filters = frappe._dict(
-		{
-			"company": doc.company,
-			"report_date": doc.posting_date,
-			"ageing_based_on": doc.ageing_based_on,
-			"range1": 30,
-			"range2": 60,
-			"range3": 90,
-			"range4": 120,
-			"party_type": "Customer",
-			"party": [entry.customer],
-		}
-	)
-	col1, ageing = get_ageing(ageing_filters)
+    # Calculate presentation currency (logic added)
+    presentation_currency = (
+        doc.currency
+        or get_party_account_currency("Customer", entry.customer, doc.company)
+        or get_company_currency(doc.company)
+    )
 
-	if ageing:
-		ageing[0]["ageing_based_on"] = doc.ageing_based_on
+    ageing_filters = frappe._dict(
+        {
+            "company": doc.company,
+            "report_date": doc.posting_date,
+            "ageing_based_on": doc.ageing_based_on,
+            "range1": 30,
+            "range2": 60,
+            "range3": 90,
+            "range4": 120,
+            "party_type": "Customer",
+            "party": [entry.customer],
+            "presentation_currency": presentation_currency,  # Added this parameter
+        }
+    )
+    col1, ageing = get_ageing(ageing_filters)
 
-	return ageing
+    if ageing:
+        ageing[0]["ageing_based_on"] = doc.ageing_based_on
+
+    return ageing
 
 
 def get_common_filters(doc):
